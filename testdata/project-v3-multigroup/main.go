@@ -68,6 +68,10 @@ func init() {
 }
 
 func main() {
+	var exitCode = 1
+	defer func() {
+		os.Exit(exitCode)
+	}()
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
@@ -94,7 +98,7 @@ func main() {
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
-		os.Exit(1)
+		return
 	}
 
 	if err = (&crewcontrollers.CaptainReconciler{
@@ -102,98 +106,99 @@ func main() {
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Captain")
-		os.Exit(1)
+		return
 	}
 	if err = (&crewv1.Captain{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Captain")
-		os.Exit(1)
+		return
 	}
 	if err = (&shipcontrollers.FrigateReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Frigate")
-		os.Exit(1)
+		return
 	}
 	if err = (&shipv1beta1.Frigate{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Frigate")
-		os.Exit(1)
+		return
 	}
 	if err = (&shipcontrollers.DestroyerReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Destroyer")
-		os.Exit(1)
+		return
 	}
 	if err = (&shipv1.Destroyer{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Destroyer")
-		os.Exit(1)
+		return
 	}
 	if err = (&shipcontrollers.CruiserReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Cruiser")
-		os.Exit(1)
+		return
 	}
 	if err = (&shipv2alpha1.Cruiser{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Cruiser")
-		os.Exit(1)
+		return
 	}
 	if err = (&seacreaturescontrollers.KrakenReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kraken")
-		os.Exit(1)
+		return
 	}
 	if err = (&seacreaturescontrollers.LeviathanReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Leviathan")
-		os.Exit(1)
+		return
 	}
 	if err = (&foopolicycontrollers.HealthCheckPolicyReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "HealthCheckPolicy")
-		os.Exit(1)
+		return
 	}
 	if err = (&appscontrollers.DeploymentReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Deployment")
-		os.Exit(1)
+		return
 	}
 	if err = (&controllers.LakersReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Lakers")
-		os.Exit(1)
+		return
 	}
 	if err = (&testprojectorgv1.Lakers{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Lakers")
-		os.Exit(1)
+		return
 	}
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")
-		os.Exit(1)
+		return
 	}
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up ready check")
-		os.Exit(1)
+		return
 	}
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
-		os.Exit(1)
+		return
 	}
+	exitCode = 0
 }

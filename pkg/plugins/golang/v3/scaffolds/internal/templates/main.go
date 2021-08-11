@@ -102,7 +102,7 @@ const (
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "%s")
-		os.Exit(1)
+		return
 	}
 `
 	multiGroupReconcilerSetupCodeFragment = `if err = (&%scontrollers.%sReconciler{
@@ -110,12 +110,12 @@ const (
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "%s")
-		os.Exit(1)
+		return
 	}
 `
 	webhookSetupCodeFragment = `if err = (&%s.%s{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "%s")
-		os.Exit(1)
+		return
 	}
 `
 )
@@ -213,6 +213,10 @@ func init() {
 }
 
 func main() {
+	var exitCode = 1
+	defer func() {
+		os.Exit(exitCode)
+	}()
 {{- if not .ComponentConfig }}
 	var metricsAddr string
 	var enableLeaderElection bool
@@ -253,7 +257,7 @@ func main() {
 		options, err = options.AndFrom(ctrl.ConfigFile().AtPath(configFile))
 		if err != nil {
 			setupLog.Error(err, "unable to load the config file")
-			os.Exit(1)
+			return
 		}
 	}
 
@@ -261,24 +265,25 @@ func main() {
 {{- end }}
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
-		os.Exit(1)
+		return
 	}
 
 	%s
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")
-		os.Exit(1)
+		return
 	}
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up ready check")
-		os.Exit(1)
+		return
 	}
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
-		os.Exit(1)
+		return
 	}
+	exitCode = 0
 }
 `

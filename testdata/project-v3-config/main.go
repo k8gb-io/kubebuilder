@@ -49,6 +49,10 @@ func init() {
 }
 
 func main() {
+	var exitCode = 1
+	defer func() {
+		os.Exit(exitCode)
+	}()
 	var configFile string
 	flag.StringVar(&configFile, "config", "",
 		"The controller will load its initial configuration from this file. "+
@@ -68,14 +72,14 @@ func main() {
 		options, err = options.AndFrom(ctrl.ConfigFile().AtPath(configFile))
 		if err != nil {
 			setupLog.Error(err, "unable to load the config file")
-			os.Exit(1)
+			return
 		}
 	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), options)
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
-		os.Exit(1)
+		return
 	}
 
 	if err = (&controllers.CaptainReconciler{
@@ -83,62 +87,63 @@ func main() {
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Captain")
-		os.Exit(1)
+		return
 	}
 	if err = (&controllers.CaptainReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Captain")
-		os.Exit(1)
+		return
 	}
 	if err = (&crewv1.Captain{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Captain")
-		os.Exit(1)
+		return
 	}
 	if err = (&controllers.FirstMateReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "FirstMate")
-		os.Exit(1)
+		return
 	}
 	if err = (&crewv1.FirstMate{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "FirstMate")
-		os.Exit(1)
+		return
 	}
 	if err = (&controllers.AdmiralReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Admiral")
-		os.Exit(1)
+		return
 	}
 	if err = (&crewv1.Admiral{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Admiral")
-		os.Exit(1)
+		return
 	}
 	if err = (&controllers.LakerReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Laker")
-		os.Exit(1)
+		return
 	}
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")
-		os.Exit(1)
+		return
 	}
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up ready check")
-		os.Exit(1)
+		return
 	}
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
-		os.Exit(1)
+		return
 	}
+	exitCode = 0
 }
